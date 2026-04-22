@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace Posts.Api.Contracts;
 
 public sealed record CreatePostHttpRequest(
-    [property: Required] Guid AuthorId,
-    [property: Required] string Title,
-    [property: Required] string Description,
-    [property: Required] string Content);
+    [param: Required] Guid AuthorId,
+    [param: Required] string Title,
+    [param: Required] string Description,
+    [param: Required] string Content);

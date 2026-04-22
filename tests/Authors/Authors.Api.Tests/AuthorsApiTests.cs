@@ -33,5 +33,14 @@ public sealed class AuthorsApiTests : IClassFixture<WebApplicationFactory<Progra
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [Fact]
+    public async Task SwaggerJsonIsExposed()
+    {
+        var response = await client.GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+    }
+
     private sealed record AuthorResponseContract(Guid Id, string Name, string Surname);
 }

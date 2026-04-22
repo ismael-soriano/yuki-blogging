@@ -13,6 +13,18 @@ namespace Posts.Api.Tests;
 public sealed class PostsApiTests
 {
     [Fact]
+    public async Task SwaggerJsonIsExposed()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
     public async Task PostCreatesResourceAndGetReturnsAuthorWhenRequested()
     {
         await using var factory = new WebApplicationFactory<Program>()
