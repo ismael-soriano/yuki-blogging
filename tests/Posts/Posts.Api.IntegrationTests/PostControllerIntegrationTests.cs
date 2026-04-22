@@ -8,9 +8,9 @@ using Posts.Application.Contracts;
 using Posts.Application.Ports;
 using Xunit;
 
-namespace Posts.Api.Tests;
+namespace Posts.Api.IntegrationTests;
 
-public sealed class PostsApiTests
+public sealed class PostControllerIntegrationTests
 {
     [Fact]
     public async Task SwaggerJsonIsExposed()

@@ -4,6 +4,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Authors.Application\Authors.Application.csproj" />
     <ProjectReference Include="..\Authors.Domain\Authors.Domain.csproj" />
   </ItemGroup>

@@ -1,11 +1,45 @@
 services:
+  authors-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: YourPassword123!
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -Q \"SELECT 1\" || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  authors-db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      MSSQL_SA_PASSWORD: YourPassword123!
+    volumes:
+      - ./docker/authors/init-authors.sql:/scripts/init-authors.sql:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - /opt/mssql-tools18/bin/sqlcmd -C -S authors-db -U sa -P "$${MSSQL_SA_PASSWORD}" -i /scripts/init-authors.sql
+    depends_on:
+      authors-db:
+        condition: service_healthy
+    restart: "no"
+
   authors-api:
     image: authors-api
     build:
       context: .
       dockerfile: src/Services/Authors/Authors.Api/Dockerfile
+    environment:
+      ConnectionStrings__AuthorsDb: Server=authors-db,1433;Database=authors;User Id=sa;Password=YourPassword123!;TrustServerCertificate=True;Encrypt=False;
     ports:
       - "5001:8080"
+    depends_on:
+      authors-db-init:
+        condition: service_completed_successfully
 
   posts-api:
     image: posts-api

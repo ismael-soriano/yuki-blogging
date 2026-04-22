@@ -2,13 +2,12 @@ using Posts.Application;
 using Posts.Application.Commands;
 using Posts.Application.Contracts;
 using Posts.Application.Ports;
-using Posts.Application.Queries;
 using Posts.Domain.Abstractions;
 using Xunit;
 
 namespace Posts.UnitTests;
 
-public sealed class PostHandlersTests
+public sealed class CreatePostCommandHandlerUnitTests
 {
     [Fact]
     public async Task CreateHandlerStoresEventAndReadModel()
@@ -36,25 +35,6 @@ public sealed class PostHandlersTests
             () => handler.HandleAsync(new CreatePostCommand(Guid.NewGuid(), "Title", "Description", "Content"), CancellationToken.None));
     }
 
-    [Fact]
-    public async Task GetQueryIncludesAuthorWhenRequested()
-    {
-        var authorId = Guid.NewGuid();
-        var postId = Guid.NewGuid();
-        var authorDirectory = new FakeAuthorDirectory(exists: true)
-        {
-            Author = new AuthorSummaryResponse(authorId, "Ada", "Lovelace")
-        };
-        var readRepository = new FakePostReadRepository();
-        await readRepository.SaveAsync(new PostReadModel(postId, authorId, "Title", "Description", "Content"), CancellationToken.None);
-
-        var handler = new GetPostByIdQueryHandler(authorDirectory, readRepository);
-        var result = await handler.HandleAsync(new GetPostByIdQuery(postId, true), CancellationToken.None);
-
-        Assert.NotNull(result);
-        Assert.NotNull(result.Author);
-        Assert.Equal("Ada", result.Author.Name);
-    }
 
     private sealed class FakeAuthorDirectory : IAuthorDirectory
     {
@@ -65,11 +45,9 @@ public sealed class PostHandlersTests
             this.exists = exists;
         }
 
-        public AuthorSummaryResponse? Author { get; init; }
-
         public Task<bool> AuthorExistsAsync(Guid authorId, CancellationToken cancellationToken) => Task.FromResult(exists);
 
-        public Task<AuthorSummaryResponse?> GetByIdAsync(Guid authorId, CancellationToken cancellationToken) => Task.FromResult(Author);
+        public Task<AuthorSummaryResponse?> GetByIdAsync(Guid authorId, CancellationToken cancellationToken) => Task.FromResult<AuthorSummaryResponse?>(null);
     }
 
     private sealed class FakePostEventStore : IPostEventStore

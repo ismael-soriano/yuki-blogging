@@ -30,8 +30,25 @@ All agents must follow these rules when modifying or generating code.
 - Maintain at least 90% coverage
 - Prefer unit tests for domain logic
 - Add integration tests for endpoints
-- Keep test split by purpose: domain/application unit tests in `tests/Posts/Posts.UnitTests`, endpoint integration tests in `tests/*/*.Api.Tests`
-- Run the full suite from solution root with `dotnet test Yuki.Blogging.sln --collect:"XPlat Code Coverage"`
+- Keep test projects split by purpose:
+  - Unit tests: `tests/*/*.UnitTests`
+  - API integration tests: `tests/*/*.Api.IntegrationTests`
+- Current expected test project layout:
+  - `tests/Authors/Authors.Api.UnitTests`
+  - `tests/Authors/Authors.Api.IntegrationTests`
+  - `tests/Posts/Posts.UnitTests`
+  - `tests/Posts/Posts.Api.IntegrationTests`
+- Unit test naming convention is mandatory:
+  - File name: `<ClassUnderTest>UnitTests.cs`
+  - Class name: `<ClassUnderTest>UnitTests`
+  - Example: `PostAggregateUnitTests.cs` / `PostAggregateUnitTests`
+- Integration test naming convention:
+  - File name: `<ControllerOrFeature>IntegrationTests.cs`
+  - Class name: `<ControllerOrFeature>IntegrationTests`
+- Run commands from solution root:
+  - Full suite with coverage: `dotnet test Yuki.Blogging.sln --collect:"XPlat Code Coverage"`
+  - Unit tests only: `dotnet test Yuki.Blogging.sln --filter "UnitTests"`
+  - Integration tests only: `dotnet test Yuki.Blogging.sln --filter "IntegrationTests"`
 - Before committing, ensure the solution compiles and relevant tests pass for the change set
 
 ## When Adding Features

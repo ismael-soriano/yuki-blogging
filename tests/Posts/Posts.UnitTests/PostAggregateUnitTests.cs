@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Posts.UnitTests;
 
-public sealed class PostAggregateTests
+public sealed class PostAggregateUnitTests
 {
     [Fact]
     public void CreateProducesPostCreatedEvent()
