@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net8.0": {
+      "authors.application": {
+        "type": "Project",
+        "dependencies": {
+          "Authors.Domain": "[1.0.0, )"
+        }
+      },
+      "authors.domain": {
+        "type": "Project"
+      }
+    }
+  }
+}
