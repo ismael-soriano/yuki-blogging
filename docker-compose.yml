@@ -1,18 +1,32 @@
 services:
   authors-api:
+    image: authors-api
     build:
       context: .
       dockerfile: src/Services/Authors/Authors.Api/Dockerfile
     ports:
-      - "8081:8080"
+      - "5001:8080"
 
   posts-api:
+    image: posts-api
     build:
       context: .
       dockerfile: src/Services/Posts/Posts.Api/Dockerfile
     environment:
       Services__Authors__BaseUrl: http://authors-api:8080
     ports:
-      - "8080:8080"
+      - "5002:8080"
     depends_on:
       - authors-api
+
+  api-gateway:
+    image: api-gateway
+    build:
+      context: .
+      dockerfile: src/Services/Gateway/Gateway.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    depends_on:
+      - authors-api
+      - posts-api
+
