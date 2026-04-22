@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Posts.Application\Posts.Application.csproj" />
+    <ProjectReference Include="..\Posts.Domain\Posts.Domain.csproj" />
+  </ItemGroup>
+</Project>
