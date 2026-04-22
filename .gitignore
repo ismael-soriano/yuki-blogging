@@ -1,0 +1,43 @@
+[Bb]in/
+[Oo]bj/
+
+# IDEs and editors
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+*.DotSettings
+
+# Test and coverage output
+TestResults/
+coverage/
+coverage*/
+*.coverage
+*.coveragexml
+
+# Logs
+*.log
+logs/
+
+# NuGet packages and artifacts
+*.nupkg
+*.snupkg
+packages/
+
+# Publish output
+publish/
+artifacts/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
