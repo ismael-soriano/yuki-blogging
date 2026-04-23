@@ -60,7 +60,7 @@ public sealed class AuthorsController : ControllerBase
         {
             return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
-                ["author"] = new[] { exception.Message }
+                ["author"] = [exception.Message]
             }));
         }
     }
@@ -80,7 +80,7 @@ public sealed class AuthorsController : ControllerBase
         {
             return BadRequest(new ValidationProblemDetails(new Dictionary<string, string[]>
             {
-                ["author"] = new[] { exception.Message }
+                ["author"] = [exception.Message]
             }));
         }
     }

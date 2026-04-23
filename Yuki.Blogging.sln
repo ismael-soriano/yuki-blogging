@@ -28,7 +28,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionFolder", "SolutionF
 		Directory.Build.props = Directory.Build.props
 		AGENTS.md = AGENTS.md
 		.gitignore = .gitignore
-		docker-compose.yml = docker-compose.yml
 		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
@@ -53,6 +52,18 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Authors.Api.IntegrationTests", "tests\Authors\Authors.Api.IntegrationTests\Authors.Api.IntegrationTests.csproj", "{7D301A5E-842D-490D-9769-164409ED3B29}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Posts.Api.IntegrationTests", "tests\Posts\Posts.Api.IntegrationTests\Posts.Api.IntegrationTests.csproj", "{97F1E566-FBFF-40B6-8EEB-1EE766821F2E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docker", "docker", "{4241CC88-6977-4E65-B03A-2BDD7401BD9C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "authors", "authors", "{5CE3F6BE-8B41-4BB5-86E4-C066F98A7572}"
+	ProjectSection(SolutionItems) = preProject
+		docker\authors\init-authors.sql = docker\authors\init-authors.sql
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "posts", "posts", "{2E447C1B-5471-4EEE-A9FC-644AFB25A486}"
+	ProjectSection(SolutionItems) = preProject
+		docker\posts\init-posts.js = docker\posts\init-posts.js
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -136,5 +147,7 @@ Global
 		{D844D898-E7E2-4757-B7C5-52BA5986EF4F} = {A4E33EF8-F8A2-4DCB-AE89-31E842D4DD9D}
 		{7D301A5E-842D-490D-9769-164409ED3B29} = {A4E33EF8-F8A2-4DCB-AE89-31E842D4DD9D}
 		{97F1E566-FBFF-40B6-8EEB-1EE766821F2E} = {2C9FE827-B9EC-4502-840D-09121DE57EF6}
+		{5CE3F6BE-8B41-4BB5-86E4-C066F98A7572} = {4241CC88-6977-4E65-B03A-2BDD7401BD9C}
+		{2E447C1B-5471-4EEE-A9FC-644AFB25A486} = {4241CC88-6977-4E65-B03A-2BDD7401BD9C}
 	EndGlobalSection
 EndGlobal

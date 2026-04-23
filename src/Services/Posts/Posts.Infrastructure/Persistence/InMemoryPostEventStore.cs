@@ -14,7 +14,7 @@ public sealed class InMemoryPostEventStore : IPostEventStore
         {
             if (!streams.TryGetValue(streamId, out var events))
             {
-                events = new List<IDomainEvent>();
+                events = [];
                 streams[streamId] = events;
             }
 

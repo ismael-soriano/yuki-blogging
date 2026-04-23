@@ -52,7 +52,7 @@ public sealed class CreatePostCommandHandlerUnitTests
 
     private sealed class FakePostEventStore : IPostEventStore
     {
-        public List<IDomainEvent> StoredEvents { get; } = new();
+        public List<IDomainEvent> StoredEvents { get; } = [];
 
         public Task AppendAsync(Guid streamId, IReadOnlyCollection<IDomainEvent> domainEvents, CancellationToken cancellationToken)
         {
@@ -61,20 +61,37 @@ public sealed class CreatePostCommandHandlerUnitTests
         }
     }
 
-    private sealed class FakePostReadRepository : IPostReadRepository
-    {
-        private readonly Dictionary<Guid, PostReadModel> posts = new();
+     private sealed class FakePostReadRepository : IPostReadRepository
+     {
+         private readonly Dictionary<Guid, PostReadModel> posts = new();
 
-        public Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-        {
-            posts.TryGetValue(id, out var post);
-            return Task.FromResult(post);
-        }
+         public Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+         {
+             posts.TryGetValue(id, out var post);
+             return Task.FromResult(post);
+         }
 
-        public Task SaveAsync(PostReadModel post, CancellationToken cancellationToken)
-        {
-            posts[post.Id] = post;
-            return Task.CompletedTask;
-        }
-    }
+         public Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+         {
+             return Task.FromResult((IReadOnlyList<PostReadModel>)posts.Values.ToList());
+         }
+
+         public Task SaveAsync(PostReadModel post, CancellationToken cancellationToken)
+         {
+             posts[post.Id] = post;
+             return Task.CompletedTask;
+         }
+
+         public Task UpdateAsync(PostReadModel post, CancellationToken cancellationToken)
+         {
+             posts[post.Id] = post;
+             return Task.CompletedTask;
+         }
+
+         public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+         {
+             posts.Remove(id);
+             return Task.CompletedTask;
+         }
+     }
 }
