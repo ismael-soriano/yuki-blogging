@@ -75,7 +75,7 @@ public sealed class PostControllerIntegrationTests : IAsyncLifetime
         var col = postsTestDb.GetCollection<MongoDB.Bson.BsonDocument>("posts");
         var allDocs = await col.Find(MongoDB.Bson.BsonDocument.Parse("{}")).ToListAsync();
         var storedDoc = allDocs.FirstOrDefault();
-        var storedIdElement = storedDoc?["Id"];
+        var storedIdElement = storedDoc?["_id"];
 
         // Try matching by the exact binary value
         var binaryStandard = new MongoDB.Bson.BsonBinaryData(createdPost.Id, MongoDB.Bson.GuidRepresentation.Standard);
