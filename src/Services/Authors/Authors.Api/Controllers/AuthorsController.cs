@@ -32,6 +32,7 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpGet]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(IReadOnlyCollection<AuthorResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyCollection<AuthorResponse>>> Get(CancellationToken cancellationToken)
     {
@@ -40,6 +41,7 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AuthorResponse>> GetById(Guid id, CancellationToken cancellationToken)
     {
@@ -49,6 +51,7 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpPost]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AuthorResponse>> Create([FromBody] UpsertAuthorHttpRequest request, CancellationToken cancellationToken)
@@ -71,6 +74,7 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -94,6 +98,7 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(NoContentResult), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
