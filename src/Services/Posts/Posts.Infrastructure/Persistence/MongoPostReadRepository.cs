@@ -17,10 +17,9 @@ public sealed class MongoPostReadRepository : IPostReadRepository
 
     public async Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var filter = Builders<PostReadModelDb>.Filter.Eq(p => p.Id, id);
-        var post = await postCollection.Find(filter).FirstOrDefaultAsync(cancellationToken);
+        var post = await postCollection.Find(p => p.Id == id).FirstOrDefaultAsync(cancellationToken);
 
-        return post == null ? null : post.ToModel();
+        return post?.ToModel();
     }
 
     public async Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
@@ -41,8 +40,7 @@ public sealed class MongoPostReadRepository : IPostReadRepository
     {
         var dbPost = new PostReadModelDb
         {
-            MongoId = ObjectId.GenerateNewId(),
-            Id = post.Id,
+            Id = Guid.NewGuid(),
             AuthorId = post.AuthorId,
             Title = post.Title,
             Description = post.Description,
@@ -55,7 +53,6 @@ public sealed class MongoPostReadRepository : IPostReadRepository
 
     public async Task UpdateAsync(PostReadModel post, CancellationToken cancellationToken)
     {
-        var filter = Builders<PostReadModelDb>.Filter.Eq(p => p.Id, post.Id);
         var update = Builders<PostReadModelDb>.Update
             .Set(p => p.Title, post.Title)
             .Set(p => p.Description, post.Description)
@@ -63,28 +60,24 @@ public sealed class MongoPostReadRepository : IPostReadRepository
             .Set(p => p.IsDeleted, post.IsDeleted)
             .Set(p => p.UpdatedAt, DateTimeOffset.UtcNow);
 
-        await postCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+        await postCollection.UpdateOneAsync(p => p.Id == post.Id, update, cancellationToken: cancellationToken);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var filter = Builders<PostReadModelDb>.Filter.Eq(p => p.Id, id);
         var update = Builders<PostReadModelDb>.Update.Set(p => p.IsDeleted, true);
 
-        await postCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+        await postCollection.UpdateOneAsync(p => p.Id == id, update, cancellationToken: cancellationToken);
     }
 
+    [BsonIgnoreExtraElements]
     private sealed class PostReadModelDb
     {
         [BsonId]
-        public ObjectId MongoId { get; set; }
-
-        [BsonElement("Id")]
-        [BsonGuidRepresentation(GuidRepresentation.Standard)]
+        [BsonRepresentation(BsonType.String)]
         public Guid Id { get; set; }
-
-        [BsonElement("AuthorId")]
-        [BsonGuidRepresentation(GuidRepresentation.Standard)]
+        
+        [BsonRepresentation(BsonType.String)]
         public Guid AuthorId { get; set; }
 
         public string Title { get; set; } = string.Empty;

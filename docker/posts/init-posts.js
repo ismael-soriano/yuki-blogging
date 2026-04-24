@@ -1,7 +1,7 @@
 const database = db.getSiblingDB("posts");
 
-const postId = UUID("11111111-1111-1111-1111-111111111111");
-const authorId = UUID("9f9df8ca-4314-4d0d-a629-fcb0cead5dae");
+const postId = "11111111-1111-1111-1111-111111111111";
+const authorId = "9f9df8ca-4314-4d0d-a629-fcb0cead5dae";
 const now = new Date();
 
 // Create indexes and seed read model data idempotently.
@@ -10,8 +10,7 @@ database.event_streams.createIndex({ StreamId: 1 }, { unique: true });
 
 if (database.posts.countDocuments({ Id: postId }) === 0) {
   database.posts.insertOne({
-    Id: postId,
-    IdText: "11111111-1111-1111-1111-111111111111",
+    _id: postId,
     AuthorId: authorId,
     Title: "Seeded post",
     Description: "Created by docker-compose MongoDB initialization",
@@ -27,7 +26,7 @@ if (database.event_streams.countDocuments({ StreamId: postId }) === 0) {
     StreamId: postId,
     Events: [
       {
-        Id: postId,
+        _id: postId,
         OccurredOnUtc: now,
         AuthorId: authorId,
         Title: "Seeded post",
