@@ -17,7 +17,9 @@ public sealed class MongoPostReadRepository : IPostReadRepository
 
     public async Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        var post = await postCollection.Find(p => p.Id == id).FirstOrDefaultAsync(cancellationToken);
+        var post = await postCollection
+            .Find(p => p.Id == id && p.IsDeleted == false)
+            .FirstOrDefaultAsync(cancellationToken);
 
         return post?.ToModel();
     }
