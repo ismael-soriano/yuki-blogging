@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Posts.Api.Contracts;
 using Posts.Application.Commands;
+using Posts.Application.Common;
+using Posts.Application.Contracts;
 using Posts.Application.Queries;
 
 namespace Posts.Api.Controllers;
@@ -65,7 +67,9 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult> GetAll([FromQuery] GetAllPostsHttpRequest request, CancellationToken cancellationToken = default)
+    [ProducesResponseType(typeof(PagedResult<PostResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResult<PostResponse>>> GetAll([FromQuery] GetAllPostsHttpRequest request, CancellationToken cancellationToken = default)
     {
         try
         {

@@ -17,7 +17,7 @@ public sealed class InMemoryPostReadRepository : IPostReadRepository
         }
     }
 
-    public Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public Task<(IReadOnlyList<PostReadModel> Items, int TotalCount)> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         lock (sync)
         {
@@ -26,7 +26,7 @@ public sealed class InMemoryPostReadRepository : IPostReadRepository
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-            return Task.FromResult((IReadOnlyList<PostReadModel>)result);
+            return Task.FromResult(((IReadOnlyList<PostReadModel>)result, posts.Count));
         }
     }
 

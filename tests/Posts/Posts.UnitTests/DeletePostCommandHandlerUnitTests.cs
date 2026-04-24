@@ -82,7 +82,7 @@ public sealed class DeletePostCommandHandlerUnitTests
 
         public Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(post);
 
-        public Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default) => Task.FromResult((IReadOnlyList<PostReadModel>)[]);
+        public Task<(IReadOnlyList<PostReadModel> Items, int TotalCount)> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default) => Task.FromResult(((IReadOnlyList<PostReadModel>)[], 0));
 
         public Task SaveAsync(PostReadModel post, CancellationToken cancellationToken) => Task.CompletedTask;
 

@@ -48,7 +48,7 @@ public sealed class UpdatePostCommandHandler
 
         await postReadRepository.UpdateAsync(updatedPost, cancellationToken);
 
-        return new PostResponse(updatedPost.Id, updatedPost.AuthorId, updatedPost.Title, updatedPost.Description, updatedPost.Content, null);
+        return new PostResponse(updatedPost.Id, updatedPost.Title, updatedPost.Description, updatedPost.Content, null);
     }
 }
 

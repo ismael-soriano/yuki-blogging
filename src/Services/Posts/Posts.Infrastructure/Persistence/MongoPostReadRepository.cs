@@ -22,25 +22,30 @@ public sealed class MongoPostReadRepository : IPostReadRepository
         return post?.ToModel();
     }
 
-    public async Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<PostReadModel> Items, int TotalCount)> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
     {
         var skip = (page - 1) * pageSize;
+        
+        var filter = Builders<PostReadModelDb>.Filter.Eq(p => p.IsDeleted, false);
+
+        var totalCount = (int)await postCollection
+            .CountDocumentsAsync(filter, cancellationToken: cancellationToken);
 
         var posts = await postCollection
-            .Find(Builders<PostReadModelDb>.Filter.Empty)
+            .Find(filter)
             .SortByDescending(p => p.CreatedAt)
             .Skip(skip)
             .Limit(pageSize)
             .ToListAsync(cancellationToken);
 
-        return posts.Select(p => p.ToModel()).ToList();
+        return (posts.Select(p => p.ToModel()).ToList(), totalCount);
     }
 
     public async Task SaveAsync(PostReadModel post, CancellationToken cancellationToken)
     {
         var dbPost = new PostReadModelDb
         {
-            Id = Guid.NewGuid(),
+            Id = post.Id,
             AuthorId = post.AuthorId,
             Title = post.Title,
             Description = post.Description,

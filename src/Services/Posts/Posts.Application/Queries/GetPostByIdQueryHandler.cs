@@ -26,6 +26,6 @@ public sealed class GetPostByIdQueryHandler
             ? await authorDirectory.GetByIdAsync(post.AuthorId, cancellationToken)
             : null;
 
-        return new PostResponse(post.Id, post.AuthorId, post.Title, post.Description, post.Content, author);
+        return new PostResponse(post.Id, post.Title, post.Description, post.Content, author);
     }
 }

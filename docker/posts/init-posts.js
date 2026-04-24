@@ -5,10 +5,9 @@ const authorId = "9f9df8ca-4314-4d0d-a629-fcb0cead5dae";
 const now = new Date();
 
 // Create indexes and seed read model data idempotently.
-database.posts.createIndex({ Id: 1 }, { unique: true });
 database.event_streams.createIndex({ StreamId: 1 }, { unique: true });
 
-if (database.posts.countDocuments({ Id: postId }) === 0) {
+if (database.posts.countDocuments({ _id: postId }) === 0) {
   database.posts.insertOne({
     _id: postId,
     AuthorId: authorId,

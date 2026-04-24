@@ -45,7 +45,6 @@ public sealed class CreatePostCommandHandler
 
         return new PostResponse(
             createdEvent.PostId,
-            createdEvent.AuthorId,
             createdEvent.Title,
             createdEvent.Description,
             createdEvent.Content,
