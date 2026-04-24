@@ -33,7 +33,10 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult> Create([FromBody] CreatePostHttpRequest request, CancellationToken cancellationToken)
+    [Produces("application/json", "application/xml")]
+    [ProducesResponseType(typeof(PostResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PostResponse>> Create([FromBody] CreatePostHttpRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -60,6 +63,9 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Produces("application/json", "application/xml")]
+    [ProducesResponseType(typeof(PostResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetById(Guid id, [FromQuery] bool includeAuthor = false, CancellationToken cancellationToken = default)
     {
         var post = await getPostByIdQueryHandler.HandleAsync(new GetPostByIdQuery(id, includeAuthor), cancellationToken);
@@ -67,6 +73,7 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpGet]
+    [Produces("application/json", "application/xml")]
     [ProducesResponseType(typeof(PagedResult<PostResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<PagedResult<PostResponse>>> GetAll([FromQuery] GetAllPostsHttpRequest request, CancellationToken cancellationToken = default)
@@ -86,6 +93,11 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Produces("application/json", "application/xml")]
+    [ProducesResponseType(typeof(PostResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ConflictResult), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdatePostHttpRequest request, CancellationToken cancellationToken)
     {
         try
@@ -114,6 +126,10 @@ public sealed class PostController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Produces("application/json", "application/xml")]
+    [ProducesResponseType(typeof(NoContentResult), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ConflictResult), StatusCodes.Status409Conflict)]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         try

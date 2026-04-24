@@ -1,10 +1,18 @@
-﻿namespace Posts.Application.Common;
+﻿using System.Xml.Serialization;
 
-public sealed class PagedResult<T>
+namespace Posts.Application.Common;
+
+[XmlRoot("PagedResult")]
+public class PagedResult<T>
 {
-    public IReadOnlyList<T> Items { get; init; } = [];
-    public int Page { get; init; }
-    public int PageSize { get; init; }
-    public int TotalCount { get; init; }
-    public int TotalPages { get; init; }
+    [XmlArray("Items")]
+    [XmlArrayItem("Item")]
+    public List<T> Items { get; set; } = new();
+
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int TotalCount { get; set; }
+    public int TotalPages { get; set; }
+    
+    public PagedResult() {}
 }
