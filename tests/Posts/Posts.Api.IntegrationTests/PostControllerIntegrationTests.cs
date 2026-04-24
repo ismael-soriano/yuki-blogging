@@ -2,223 +2,247 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using MongoDB.Driver;
 using Posts.Api.Contracts;
 using Posts.Application;
 using Posts.Application.Contracts;
 using Posts.Application.Ports;
-using Posts.Domain.Abstractions;
+using Testcontainers.MongoDb;
 using Xunit;
 
 namespace Posts.Api.IntegrationTests;
 
-public sealed class PostControllerIntegrationTests
+public sealed class PostControllerIntegrationTests : IAsyncLifetime
 {
-     [Fact]
-     public async Task SwaggerJsonIsExposed()
-     {
-         await using var factory = new WebApplicationFactory<Program>()
-             .WithWebHostBuilder(builder =>
-             {
-                 builder.ConfigureTestServices(services =>
-                 {
-                     services.AddSingleton<IAuthorDirectory>(new StubAuthorDirectory());
-                     services.AddSingleton<IPostEventStore>(new InMemoryPostEventStore());
-                     services.AddSingleton<IPostReadRepository>(new InMemoryPostReadRepository());
-                 });
-             });
-         
-         var client = factory.CreateClient();
+    private MongoDbContainer? container;
+    private IMongoClient? mongoClient;
 
-         var response = await client.GetAsync("/swagger/v1/swagger.json");
+    public async Task InitializeAsync()
+    {
+        container = new MongoDbBuilder()
+            .WithCleanUp(true)
+            .Build();
 
-         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
-     }
+        await container.StartAsync();
+        mongoClient = new MongoClient(container.GetConnectionString());
+        await InitializeDatabaseAsync();
+    }
 
-     [Fact]
-     public async Task PostCreatesResourceAndGetReturnsAuthorWhenRequested()
-     {
-         await using var factory = new WebApplicationFactory<Program>()
-             .WithWebHostBuilder(builder =>
-             {
-                 builder.ConfigureTestServices(services =>
-                 {
-                     services.AddSingleton<IAuthorDirectory>(new StubAuthorDirectory());
-                     services.AddSingleton<IPostEventStore>(new InMemoryPostEventStore());
-                     services.AddSingleton<IPostReadRepository>(new InMemoryPostReadRepository());
-                 });
-             });
+    public async Task DisposeAsync()
+    {
+        if (container is not null)
+        {
+            await container.StopAsync();
+        }
+    }
 
-         var client = factory.CreateClient();
-         var authorId = Guid.Parse("9f9df8ca-4314-4d0d-a629-fcb0cead5dae");
+    [Fact]
+    public async Task SwaggerJsonIsExposed()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
 
-         var createResponse = await client.PostAsJsonAsync(
-             "/post",
-             new CreatePostHttpRequest(authorId, "Title", "Description", "Content"));
+        var response = await client.GetAsync("/swagger/v1/swagger.json");
 
-         Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+    }
 
-         var createdPost = await createResponse.Content.ReadFromJsonAsync<PostContract>();
-         Assert.NotNull(createdPost);
+    [Fact]
+    public async Task PostCreatesResourceAndGetReturnsAuthorWhenRequested()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
+        var authorId = Guid.Parse("9f9df8ca-4314-4d0d-a629-fcb0cead5dae");
 
-         var fetchedPost = await client.GetFromJsonAsync<PostContract>($"/post/{createdPost.Id}?includeAuthor=true");
+        var createResponse = await client.PostAsJsonAsync(
+            "/post",
+            new CreatePostHttpRequest(authorId, "Title", "Description", "Content"));
 
-         Assert.NotNull(fetchedPost);
-         Assert.NotNull(fetchedPost.Author);
-         Assert.Equal("Ada", fetchedPost.Author.Name);
-     }
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
 
-     [Fact]
-     public async Task PostReturnsValidationProblemWhenAuthorDoesNotExist()
-     {
-         await using var factory = new WebApplicationFactory<Program>()
-             .WithWebHostBuilder(builder =>
-             {
-                 builder.ConfigureTestServices(services =>
-                 {
-                     services.AddSingleton<IAuthorDirectory>(new StubAuthorDirectory(exists: false));
-                     services.AddSingleton<IPostEventStore>(new InMemoryPostEventStore());
-                     services.AddSingleton<IPostReadRepository>(new InMemoryPostReadRepository());
-                 });
-             });
+        var createdPost = await createResponse.Content.ReadFromJsonAsync<PostContract>();
+        Assert.NotNull(createdPost);
 
-         var client = factory.CreateClient();
+        var getResponse = await client.GetAsync($"/post/{createdPost.Id}?includeAuthor=true");
+        var getBody = await getResponse.Content.ReadAsStringAsync();
 
-         var response = await client.PostAsJsonAsync(
-             "/post",
-             new CreatePostHttpRequest(Guid.NewGuid(), "Title", "Description", "Content"));
+        // Direct DB check for diagnosis
+        var postsTestDb = mongoClient!.GetDatabase("posts_test");
+        var col = postsTestDb.GetCollection<MongoDB.Bson.BsonDocument>("posts");
+        var allDocs = await col.Find(MongoDB.Bson.BsonDocument.Parse("{}")).ToListAsync();
+        var storedDoc = allDocs.FirstOrDefault();
+        var storedIdElement = storedDoc?["Id"];
 
-         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-     }
+        // Try matching by the exact binary value
+        var binaryStandard = new MongoDB.Bson.BsonBinaryData(createdPost.Id, MongoDB.Bson.GuidRepresentation.Standard);
+        var matchingDocs = await col.Find(new MongoDB.Bson.BsonDocument("Id", binaryStandard)).ToListAsync();
 
-     [Fact]
-     public async Task GetByIdReturnsNotFoundWhenPostDoesNotExist()
-     {
-         await using var factory = new WebApplicationFactory<Program>()
-             .WithWebHostBuilder(builder =>
-             {
-                 builder.ConfigureTestServices(services =>
-                 {
-                     services.AddSingleton<IAuthorDirectory>(new StubAuthorDirectory());
-                     services.AddSingleton<IPostEventStore>(new InMemoryPostEventStore());
-                     services.AddSingleton<IPostReadRepository>(new InMemoryPostReadRepository());
-                 });
-             });
+        Assert.True(getResponse.IsSuccessStatusCode, 
+            $"GET failed with {getResponse.StatusCode}. " +
+            $"createdPost.Id={createdPost.Id}. " +
+            $"Stored Id: type={storedIdElement?.BsonType}, val={storedIdElement}, subtype={(storedIdElement as MongoDB.Bson.BsonBinaryData)?.SubType}. " +
+            $"Filter binary subtype={binaryStandard.SubType}. " +
+            $"Direct filter match count={matchingDocs.Count}. " +
+            $"Body: {getBody}");
 
-         var client = factory.CreateClient();
+        var fetchedPost = await getResponse.Content.ReadFromJsonAsync<PostContract>();
 
-         var response = await client.GetAsync($"/post/{Guid.NewGuid()}");
+        Assert.NotNull(fetchedPost);
+        Assert.NotNull(fetchedPost.Author);
+        Assert.Equal("Ada", fetchedPost.Author.Name);
+    }
 
-         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-     }
+    [Fact]
+    public async Task PostReturnsValidationProblemWhenAuthorDoesNotExist()
+    {
+        await using var factory = CreateFactory(authorExists: false);
+        var client = factory.CreateClient();
 
-     private sealed class StubAuthorDirectory : IAuthorDirectory
-     {
-         private readonly bool exists;
+        var response = await client.PostAsJsonAsync(
+            "/post",
+            new CreatePostHttpRequest(Guid.NewGuid(), "Title", "Description", "Content"));
 
-         public StubAuthorDirectory(bool exists = true)
-         {
-             this.exists = exists;
-         }
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 
-         public Task<bool> AuthorExistsAsync(Guid authorId, CancellationToken cancellationToken) => Task.FromResult(exists);
+    [Fact]
+    public async Task GetByIdReturnsNotFoundWhenPostDoesNotExist()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
 
-         public Task<AuthorSummaryResponse?> GetByIdAsync(Guid authorId, CancellationToken cancellationToken)
-         {
-             var author = exists ? new AuthorSummaryResponse(authorId, "Ada", "Lovelace") : null;
-             return Task.FromResult(author);
-         }
-     }
+        var response = await client.GetAsync($"/post/{Guid.NewGuid()}");
 
-     private sealed class InMemoryPostEventStore : IPostEventStore
-     {
-         private readonly Dictionary<Guid, List<IDomainEvent>> streams = new();
-         private readonly object sync = new();
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 
-         public Task AppendAsync(Guid streamId, IReadOnlyCollection<IDomainEvent> domainEvents, CancellationToken cancellationToken)
-         {
-             lock (sync)
-             {
-                 if (!streams.TryGetValue(streamId, out var events))
-                 {
-                     events = [];
-                     streams[streamId] = events;
-                 }
+    [Fact]
+    public async Task PutUpdatesPostInDatabase()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
+        var authorId = Guid.Parse("9f9df8ca-4314-4d0d-a629-fcb0cead5dae");
 
-                 events.AddRange(domainEvents);
-             }
+        var createResponse = await client.PostAsJsonAsync(
+            "/post",
+            new CreatePostHttpRequest(authorId, "Original Title", "Original Description", "Original Content"));
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<PostContract>();
+        Assert.NotNull(created);
 
-             return Task.CompletedTask;
-         }
-     }
+        var updateResponse = await client.PutAsJsonAsync(
+            $"/post/{created.Id}",
+            new UpdatePostHttpRequest("Updated Title", "Updated Description", "Updated Content"));
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
 
-     private sealed class InMemoryPostReadRepository : IPostReadRepository
-     {
-         private readonly Dictionary<Guid, PostReadModel> posts = new();
-         private readonly object sync = new();
+        var fetched = await client.GetFromJsonAsync<PostContract>($"/post/{created.Id}");
+        Assert.NotNull(fetched);
+        Assert.Equal("Updated Title", fetched.Title);
+        Assert.Equal("Updated Description", fetched.Description);
+    }
 
-         public Task<PostReadModel?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-         {
-             lock (sync)
-             {
-                 posts.TryGetValue(id, out var post);
-                 return Task.FromResult(post);
-             }
-         }
+    [Fact]
+    public async Task DeleteSoftDeletesPostInDatabase()
+    {
+        await using var factory = CreateFactory();
+        var client = factory.CreateClient();
+        var authorId = Guid.Parse("9f9df8ca-4314-4d0d-a629-fcb0cead5dae");
 
-         public Task<IReadOnlyList<PostReadModel>> GetAllAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
-         {
-             lock (sync)
-             {
-                 var result = posts.Values
-                     .OrderByDescending(p => p.Id)
-                     .Skip((page - 1) * pageSize)
-                     .Take(pageSize)
-                     .ToList();
-                 return Task.FromResult((IReadOnlyList<PostReadModel>)result);
-             }
-         }
+        var createResponse = await client.PostAsJsonAsync(
+            "/post",
+            new CreatePostHttpRequest(authorId, "Post to Delete", "Desc", "Content"));
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<PostContract>();
+        Assert.NotNull(created);
 
-         public Task SaveAsync(PostReadModel post, CancellationToken cancellationToken)
-         {
-             lock (sync)
-             {
-                 posts[post.Id] = post;
-             }
+        var deleteResponse = await client.DeleteAsync($"/post/{created.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
-             return Task.CompletedTask;
-         }
+        var getResponse = await client.GetAsync($"/post/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
 
-         public Task UpdateAsync(PostReadModel post, CancellationToken cancellationToken)
-         {
-             lock (sync)
-             {
-                 posts[post.Id] = post;
-             }
+    private WebApplicationFactory<Program> CreateFactory(bool authorExists = true)
+    {
+        var connectionString = container!.GetConnectionString();
 
-             return Task.CompletedTask;
-         }
+        return new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder =>
+            {
+                // Override configuration so the infrastructure layer picks up the test container
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["MongoDB:ConnectionString"] = connectionString,
+                        ["MongoDB:DatabaseName"] = "posts_test",
+                    });
+                });
 
-         public Task DeleteAsync(Guid id, CancellationToken cancellationToken)
-         {
-             lock (sync)
-             {
-                 if (posts.TryGetValue(id, out var post))
-                 {
-                     posts[id] = post with { IsDeleted = true };
-                 }
-             }
+                builder.ConfigureTestServices(services =>
+                {
+                    // Remove existing singleton IMongoClient (registered at startup before config override)
+                    services.RemoveAll<IMongoClient>();
+                    services.AddSingleton<IMongoClient>(_ => mongoClient!);
 
-             return Task.CompletedTask;
-         }
-     }
+                    services.AddSingleton<IAuthorDirectory>(new StubAuthorDirectory(authorExists));
+                });
+            });
+    }
 
-     private sealed record PostContract(
-         Guid Id,
-         Guid AuthorId,
-         string Title,
-         string Description,
-         string Content,
-         AuthorSummaryResponse? Author);
+    private async Task InitializeDatabaseAsync()
+    {
+        var db = mongoClient!.GetDatabase("posts_test");
+
+        var names = await (await db.ListCollectionNamesAsync()).ToListAsync();
+
+        if (!names.Contains("posts"))
+            await db.CreateCollectionAsync("posts");
+
+        if (!names.Contains("event_streams"))
+            await db.CreateCollectionAsync("event_streams");
+
+        var postsCollection = db.GetCollection<MongoDB.Bson.BsonDocument>("posts");
+        await postsCollection.Indexes.CreateOneAsync(
+            new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+                new MongoDB.Bson.BsonDocument("Id", 1),
+                new CreateIndexOptions { Unique = true }));
+
+        var eventCollection = db.GetCollection<MongoDB.Bson.BsonDocument>("event_streams");
+        await eventCollection.Indexes.CreateOneAsync(
+            new CreateIndexModel<MongoDB.Bson.BsonDocument>(
+                new MongoDB.Bson.BsonDocument("StreamId", 1),
+                new CreateIndexOptions { Unique = true }));
+    }
+
+    private sealed class StubAuthorDirectory : IAuthorDirectory
+    {
+        private readonly bool exists;
+
+        public StubAuthorDirectory(bool exists = true)
+        {
+            this.exists = exists;
+        }
+
+        public Task<bool> AuthorExistsAsync(Guid authorId, CancellationToken cancellationToken) =>
+            Task.FromResult(exists);
+
+        public Task<AuthorSummaryResponse?> GetByIdAsync(Guid authorId, CancellationToken cancellationToken)
+        {
+            var author = exists ? new AuthorSummaryResponse(authorId, "Ada", "Lovelace") : null;
+            return Task.FromResult(author);
+        }
+    }
+
+    private sealed record PostContract(
+        Guid Id,
+        Guid AuthorId,
+        string Title,
+        string Description,
+        string Content,
+        AuthorSummaryResponse? Author);
 }

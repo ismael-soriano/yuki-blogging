@@ -4,6 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Testcontainers" />
+    <PackageReference Include="Testcontainers.MongoDB" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
