@@ -1,5 +1,6 @@
 using Authors.Api.Contracts;
 using Authors.Application.Commands;
+using Authors.Application.Contracts;
 using Authors.Application.Queries;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,14 +32,16 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult> Get(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IReadOnlyCollection<AuthorResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyCollection<AuthorResponse>>> Get(CancellationToken cancellationToken)
     {
         var authors = await getAuthorsQueryHandler.HandleAsync(new GetAuthorsQuery(), cancellationToken);
         return Ok(authors);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthorResponse>> GetById(Guid id, CancellationToken cancellationToken)
     {
         var author = await getAuthorByIdQueryHandler.HandleAsync(new GetAuthorByIdQuery(id), cancellationToken);
 
@@ -46,7 +49,9 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult> Create([FromBody] UpsertAuthorHttpRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<AuthorResponse>> Create([FromBody] UpsertAuthorHttpRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -66,7 +71,10 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult> Update(Guid id, [FromBody] UpsertAuthorHttpRequest request, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(AuthorResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<AuthorResponse>> Update(Guid id, [FromBody] UpsertAuthorHttpRequest request, CancellationToken cancellationToken)
     {
         try
         {
@@ -86,6 +94,8 @@ public sealed class AuthorsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [ProducesResponseType(typeof(NoContentResult), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(NotFoundResult), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         var deleted = await deleteAuthorCommandHandler.HandleAsync(new DeleteAuthorCommand(id), cancellationToken);
