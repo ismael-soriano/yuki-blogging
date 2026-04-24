@@ -91,31 +91,17 @@ All routing and Swagger aggregation is configured through `appsettings.json`:
 
 ## Running the Gateway
 
-### Local Development
+### Local Development with Docker Compose
 
 ```bash
-# Start Authors API on port 8081
-dotnet run --project src/Services/Authors/Authors.Api
-
-# Start Posts API on port 8080
-dotnet run --project src/Services/Posts/Posts.Api
-
-# Start Gateway (update appsettings.json hosts to localhost if running outside Docker)
-dotnet run --project src/Services/Gateway/Gateway.Api
+# Start all the environment with the docker-compose project for debugging or execute
+docker-compose up -d
 ```
 
 Then access:
-- **Swagger UI**: `http://localhost:8000/swagger`
+- **Composed Swagger UI**: `http://localhost:8000/swagger`
 - **Routed Authors API**: `http://localhost:8000/authors/{id}`
-- **Routed Posts API**: `http://localhost:8000/post` and `http://localhost:8000/post/{id}`
-
-### Docker Compose
-
-```bash
-docker-compose up
-```
-
-Access the gateway at `http://localhost:8000`.
+- **Routed Posts API**: `http://localhost:8000/post`
 
 ## Swagger Aggregation
 
@@ -164,9 +150,9 @@ No recompilation needed — Ocelot and SwaggerForOcelot read configuration at st
 
 | Service | Docker Internal Port | Host Port | Via Gateway |
 |---------|---------------------|-----------|-------------|
-| Authors | 8080 | 8081 | `localhost:8000/authors` |
-| Posts | 8080 | 8080 | `localhost:8000/post` |
-| Gateway | 8080 | 8000 | — |
+| Authors | 8080 | 5001      | `localhost:8000/authors` |
+| Posts | 8080 | 5002      | `localhost:8000/post` |
+| Gateway | 8080 | 5000      | — |
 
 ## Dependencies
 
