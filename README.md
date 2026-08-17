@@ -1,6 +1,6 @@
-# Yuki Blogging
+# Sample Blogging
 
-Backend technical test implementation for a software company assessment.
+Backend technical test implementation for a Software Architecture assessment on designing Distributed Systems.
 
 This solution exposes a small blogging platform through a microservice-based backend composed of:
 
